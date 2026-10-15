@@ -5,71 +5,7 @@
 <html lang="th">
 <head>
 
-<script>
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxhKFg6W2NSfi1MHI19T0B1hIhCAV8EjEmbplN9qcsJOPBgb-EL72MTdT3cfTe_LA3U/exec";
 
-  // ฟังก์ชันกลางสำหรับยิง Request ไปยัง Apps Script
-  async function callGasAPI(action, payload) {
-    try {
-      const response = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: action, payload: payload })
-      });
-      const text = await response.text();
-      return JSON.parse(text);
-    } catch (err) {
-      console.error("API Error:", err);
-      return { status: 'error', message: err.toString() };
-    }
-  }
-
-  // จำลองโครงสร้าง google.script.run ให้เชื่อมโยงกับ API ด้านบน
-  window.google = {
-    script: {
-      run: new Proxy({}, {
-        get(target, prop) {
-          if (prop === 'withSuccessHandler') {
-            return function(successFn) {
-              let failureFn = null;
-              const builder = {
-                withFailureHandler(failFn) {
-                  failureFn = failFn;
-                  return this;
-                }
-              };
-              return new Proxy(builder, {
-                get(bTarget, bProp) {
-                  if (bProp === 'withFailureHandler') return bTarget.withFailureHandler;
-                  return async function(...args) {
-                    let payload = args.length === 1 ? args[0] : args;
-                    // แปลงพารามิเตอร์เดี่ยวของบางฟังก์ชันให้ตรงกับที่ Apps Script รอรับ
-                    if (bProp === 'doLogin') {
-                      payload = { id: args[0], pwd: args[1] };
-                    } else if (bProp === 'getPersonnelProfile') {
-                      payload = { teacherId: args[0] };
-                    } else if (bProp === 'deleteTrainingRecord') {
-                      payload = { recordId: args[0], currentUserId: args[1], currentUserRole: args[2] };
-                    }
-
-                    const res = await callGasAPI(bProp, payload);
-                    if (res && (res.status === 'success' || !res.status)) {
-                      // บางฟังก์ชันส่งค่ากลับมาตรงๆ ไม่มี wrapper status
-                      const data = res.result !== undefined ? res.result : res;
-                      if (successFn) successFn(data);
-                    } else {
-                      if (failureFn) failureFn(new Error(res.message || 'Unknown error'));
-                      else Swal.fire('Error', res.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-                    }
-                  };
-                }
-              });
-            };
-          }
-        }
-      })
-    }
-  };
-</script>
 
 
 
