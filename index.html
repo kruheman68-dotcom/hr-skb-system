@@ -2,44 +2,15 @@
 <html lang="th">
 <head>
 
+  <script>
+  // นำ URL ที่ได้จากการ Deploy ในขั้นตอนที่ 2 มาใส่ตรงนี้
+  window.GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzzJMzpxReGSi3jOGjX2PIAVeTDb2h9j32hDtpD6i8I2LSXcOpE1oBQ203JpfvGCbT4/exec";
+  
+  // โค้ดส่วนจัดการ Bridge API (ที่เคยให้ไปก่อนหน้านี้) อยู่ที่นี่...
+</script>
+
   
 <script>
-
-
-function createGasRunner(functionName, onSuccess, onFailure) {
-  return function(...args) {
-    if (!window.GAS_WEB_APP_URL || window.GAS_WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbyI4UIwtmXbIdsvE91_P9gO4xWgVnpWHXbvqt6pzVdJfBd5_lMV4DykiISm5JRgz6w_/exec")) {
-      const err = new Error("กรุณาระบุ GAS_WEB_APP_URL ในไฟล์ index.html ให้ถูกต้องก่อนใช้งาน");
-      if (onFailure) onFailure(err);
-      else console.error(err);
-      return;
-    }
-
-    // แปลงข้อมูลเป็น URLSearchParams เพื่อหลีกเลี่ยงการติด CORS Preflight บนเบราว์เซอร์
-    const payload = new URLSearchParams();
-    payload.append("action", functionName);
-    payload.append("args", JSON.stringify(args));
-
-    fetch(window.GAS_WEB_APP_URL, {
-      method: "POST",
-      body: payload
-    })
-    .then(res => res.json())
-    .then(res => {
-      if (res && res.__gas_error) {
-        const err = new Error(res.__gas_error);
-        if (onFailure) onFailure(err);
-        else console.error("GAS Execution Error:", res.__gas_error);
-      } else {
-        if (onSuccess) onSuccess(res);
-      }
-    })
-    .catch(err => {
-      if (onFailure) onFailure(err);
-      else console.error("Network/CORS Error:", err);
-    });
-  };
-}
 
 
 
