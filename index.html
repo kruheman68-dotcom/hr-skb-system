@@ -1,27 +1,33 @@
-
-
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
 
-
-
-
-
   
 <script>
+// ------------------------------------------------------------------
+  // ⚙️ [ตั้งค่าระบบ] นำ Web App URL ที่ได้จาก Google Apps Script มาวางตรงนี้
+  // ------------------------------------------------------------------
+  window.GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyUEPZvdREXSo2MSvfXUWnbqh4RtPadbTiBTM9zI8WrZIOolQgr_PWLsPNAaF6l4D2l/exec"; // <-- นำลิงก์ Web App URL ของคุณมาวางแทนที่ข้อความนี้ (รวมเครื่องหมายคำพูด)
+  
   window.SYSTEM_SETTINGS = {
-    logoUrl: '',
-    schoolName: 'โรงเรียนแก่งคอย',
-    subdistrict: 'แก่งคอย',
-    district: 'แก่งคอย',
-    province: 'สระบุรี',
-    headInfoName: 'นางสาวธณัฐภรณ์ สนิทมาก',
-    headPersonnelName: 'นางสาวเบญจมาวรรณ โพธิ์โรจน์',
-    directorName: 'นายดุลชิตร์ มงคล'
+    logoUrl: <?!= JSON.stringify(logoUrl || '') ?>,
+    schoolName: <?!= JSON.stringify(schoolName || 'โรงเรียนแก่งคอย') ?>,
+    subdistrict: <?!= JSON.stringify(subdistrict || 'แก่งคอย') ?>,
+    district: <?!= JSON.stringify(district || 'แก่งคอย') ?>,
+    province: <?!= JSON.stringify(province || 'สระบุรี') ?>,
+    headInfoName: <?!= JSON.stringify(headInfoName || 'นางสาวธณัฐภรณ์ สนิทมาก') ?>,
+    headPersonnelName: <?!= JSON.stringify(headPersonnelName || 'นางสาวเบญจมาวรรณ โพธิ์โรจน์') ?>,
+    directorName: <?!= JSON.stringify(directorName || 'นายดุลชิตร์ มงคล') ?>
   };
   window.APP_LOGO_URL = window.SYSTEM_SETTINGS.logoUrl;
+  document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll('.system-logo-img').forEach(function(img) {
+          if(window.APP_LOGO_URL) img.src = window.APP_LOGO_URL;
+      });
+      if (typeof initSystemSettingsUI === 'function') {
+          initSystemSettingsUI();
+      }
+  });
 </script>
 
   <meta charset="UTF-8">
@@ -2825,23 +2831,20 @@
         const pwd = document.getElementById('loginPwd').value;
         showLoading(true);
 
-      showLoading(true);
-callGAS('doLogin', { id: id, pwd: pwd })
-  .then(res => {
-    showLoading(false);
-    if (res && res.status === 'success') {
-      currentUser = res.user;
-      sessionStorage.setItem('kvc_user', JSON.stringify(currentUser));
-      initAppState();
-      Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ', timer: 1500, showConfirmButton: false });
-    } else {
-      Swal.fire({ icon: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', text: res ? res.message : 'รหัสครูหรือรหัสผ่านไม่ถูกต้อง' });
-    }
-  })
-  .catch(error => {
-    showLoading(false);
-    Swal.fire('Error', error.message, 'error');
-  });
+        google.script.run
+            .withSuccessHandler(res => {
+                showLoading(false);
+                if (res && res.status === 'success') {
+                    currentUser = res.user;
+                    sessionStorage.setItem('kvc_user', JSON.stringify(currentUser));
+                    initAppState();
+                    Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ', timer: 1500, showConfirmButton: false });
+                } else { 
+                    Swal.fire({ icon: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', text: res ? res.message : 'รหัสครูหรือรหัสผ่านไม่ถูกต้อง', confirmButtonText: 'ตกลง' }); 
+                }
+            })
+            .withFailureHandler(error => { showLoading(false); Swal.fire('Error', error.message, 'error'); })
+            .doLogin(id, pwd);
     }
 
     function initAppState() {
@@ -7998,79 +8001,6 @@ function renderPrintableStudentPerf(r) {
   setTimeout(() => { window.print(); }, 800);
 }
 
-
-
-
-  // กำหนด Web App URL ที่ได้จากการ Deploy ใน Google Apps Script
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKYs5_xzV7GxOOTd9iq6sZZ112JJjSZW6JuNCmfi5BnMo1mc_MTakbhvwAXfsSRKU/exec";
-
-// ตัวช่วยจำลอง google.script.run ให้ทำงานผ่าน fetch API
-const google = {
-  script: {
-    run: {
-      withSuccessHandler: function(successCallback) {
-        this.success = successCallback;
-        return this;
-      },
-      withFailureHandler: function(failureCallback) {
-        this.failure = failureCallback;
-        return this;
-      },
-      // ฟังก์ชันตัวแทนในการเรียกชื่อ method ต่างๆ
-      callApi: async function(funcName, ...args) {
-        try {
-          let response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'cors', // สำคัญสำหรับการเรียกข้ามโดเมนจาก GitHub ไป GAS
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ func: funcName, args: args })
-          });
-          let result = await response.json();
-          if (this.success) this.success(result);
-        } catch (error) {
-          if (this.failure) this.failure(error);
-          else console.error("API Error:", error);
-        }
-      }
-    }
-  }
-};
-
-// วิธีใช้งานแทน google.script.run เดิม:
-// ตัวอย่างเดิม: google.script.run.withSuccessHandler(res => { ... }).doLogin(id, pwd);
-// เปลี่ยนเป็น: google.script.run.withSuccessHandler(res => { ... }).callApi('doLogin', id, pwd);
-
-
-
-
-// นำ Web App URL ที่ได้จากการ Deploy มาวางที่นี่
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
-
-// ฟังก์ชันสำหรับส่ง Request ไปยัง Google Apps Script
-async function callGAS(action, params = {}) {
-  try {
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-      },
-      body: JSON.stringify({ action: action, params: params })
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("API Call Error:", error);
-    throw error;
-  }
-}
-
-
-    
   </script>
-
-
-
-
-
-  
 </body>
 </html>
