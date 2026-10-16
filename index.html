@@ -8003,6 +8003,57 @@ function renderPrintableStudentPerf(r) {
   setTimeout(() => { window.print(); }, 800);
 }
 
+
+
+
+
+
+
+
+    // กำหนด Web App URL ที่ได้จากการ Deploy ใน Google Apps Script
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwuVSKHreedRhnP_DIdk1thRemau2jjSp3ff7aRvPx2IBETZg543zATcOiiwQ6kyYOY/exec";
+
+// ตัวช่วยจำลอง google.script.run ให้ทำงานผ่าน fetch API
+const google = {
+  script: {
+    run: {
+      withSuccessHandler: function(successCallback) {
+        this.success = successCallback;
+        return this;
+      },
+      withFailureHandler: function(failureCallback) {
+        this.failure = failureCallback;
+        return this;
+      },
+      // ฟังก์ชันตัวแทนในการเรียกชื่อ method ต่างๆ
+      callApi: async function(funcName, ...args) {
+        try {
+          let response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'cors', // สำคัญสำหรับการเรียกข้ามโดเมนจาก GitHub ไป GAS
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ func: funcName, args: args })
+          });
+          let result = await response.json();
+          if (this.success) this.success(result);
+        } catch (error) {
+          if (this.failure) this.failure(error);
+          else console.error("API Error:", error);
+        }
+      }
+    }
+  }
+};
+
+// วิธีใช้งานแทน google.script.run เดิม:
+// ตัวอย่างเดิม: google.script.run.withSuccessHandler(res => { ... }).doLogin(id, pwd);
+// เปลี่ยนเป็น: google.script.run.withSuccessHandler(res => { ... }).callApi('doLogin', id, pwd);
+
+
+
+
+
+    
   </script>
 </body>
 </html>
